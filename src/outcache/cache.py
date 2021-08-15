@@ -24,7 +24,7 @@ class Cache:
     def __call__(self, *param_arg, **param_kwargs):
         @wraps(param_arg[0])
         def wrapper(ctx, *args, **kwargs):
-            key = f"{param_arg[0].__name__}/{args[0]}"
+            key = f"{param_arg[0].__name__}/{'/'.join([str(arg) for arg in args])}"
             result = self.__get_data(key)
 
             if result is None:
