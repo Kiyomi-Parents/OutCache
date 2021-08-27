@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -24,7 +25,7 @@ class CacheAsync:
     def __call__(self, *param_arg, **param_kwargs):
         @wraps(param_arg[0])
         async def wrapper(ctx, *args, **kwargs):
-            key = f"{param_arg[0].__name__}/{'/'.join([str(arg) for arg in args])}"
+            key = self._get_key(param_arg[0], *args, **kwargs)
             result = self.__get_data(key)
 
             if result is None:
@@ -36,14 +37,21 @@ class CacheAsync:
 
         return wrapper
 
-    def __add(self, key, data):
-        if not isinstance(data, dict):
-            raise UnSupportedDataTypeException(f"{type(data)} is unsupported!")
+    @staticmethod
+    def _get_key(func, *args, **kwargs) -> str:
+        key_args = [str(arg) for arg in args]
+        key_kwargs = []
 
+        for key, value in kwargs.items():
+            key_kwargs.append(f"{key}={value}")
+
+        return f"{func.__name__}/{'/'.join(key_args)}/{'/'.join(key_kwargs)}"
+
+    def __add(self, key, data):
         self._cache.append({
             "expire": datetime.now() + timedelta(seconds=self._time),
             "key": key,
-            "data": data.copy()
+            "data": copy.deepcopy(data)
         })
 
     def __get(self, key):
