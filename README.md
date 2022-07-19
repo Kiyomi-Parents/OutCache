@@ -2,7 +2,7 @@
 # OutCache
 Function output cacher
 
-Usage:
+### Regular usage:
 
 ```python
 from outcache import Cache
@@ -14,6 +14,18 @@ def get_profile(email: str, username: str):
 
     return my_dict
 
-
 profile = get_profile("example@example.com", username="example")
+```
+
+### Async usage
+```python
+from outcache import CacheAsync
+
+@CacheAsync(minutes=1)
+async def get_profile(email: str, username: str):
+    my_dict = {"email": email, "username": username}
+
+    return my_dict
+
+profile = await get_profile("example@example.com", username="example")
 ```
