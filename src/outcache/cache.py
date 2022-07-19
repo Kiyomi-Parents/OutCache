@@ -1,6 +1,9 @@
 import copy
 from datetime import datetime, timedelta
 from functools import wraps
+from typing import List, Optional, Callable
+
+from src.outcache.cachable import Cachable
 
 
 class UnSupportedDataTypeException(Exception):
@@ -8,9 +11,9 @@ class UnSupportedDataTypeException(Exception):
 
 
 class Cache:
-    _cache = []
+    _cache: List[Cachable] = []
 
-    def __init__(self, hours=None, minutes=None, seconds=None):
+    def __init__(self, hours: float = None, minutes: float = None, seconds: float = None):
         self._time = 0
 
         if hours is not None:
@@ -25,7 +28,7 @@ class Cache:
     def __call__(self, *param_arg, **param_kwargs):
         @wraps(param_arg[0])
         def wrapper(ctx, *args, **kwargs):
-            key = self._get_key(param_arg[0], *args, **kwargs)
+            key = self._get_key(ctx, param_arg[0], *args, **kwargs)
             result = self.__get_data(key)
 
             if result is None:
@@ -38,38 +41,41 @@ class Cache:
         return wrapper
 
     @staticmethod
-    def _get_key(func, *args, **kwargs) -> str:
+    def _get_key(ctx: object, func: Callable, *args, **kwargs) -> str:
         key_args = [str(arg) for arg in args]
         key_kwargs = []
 
         for key, value in kwargs.items():
             key_kwargs.append(f"{key}={value}")
 
-        return f"{func.__name__}/{'/'.join(key_args)}/{'/'.join(key_kwargs)}"
+        return f"{id(ctx)}/{func.__name__}/{'/'.join(key_args)}/{'/'.join(key_kwargs)}"
 
-    def __add(self, key, data):
-        self._cache.append({
-            "expire": datetime.now() + timedelta(seconds=self._time),
-            "key": key,
-            "data": copy.deepcopy(data)
-        })
+    def __add(self, key: str, data: object) -> None:
+        self._cache.append(
+                Cachable(
+                        datetime.now() + timedelta(seconds=self._time),
+                        key,
+                        copy.deepcopy(data)
+                )
+        )
 
-    def __get(self, key):
-        for item in self._cache:
-            if item["key"] == key:
-                return item
+    def __get(self, key: str) -> Optional[Cachable]:
+        for cachable in self._cache:
+            if cachable.key == key:
+                return cachable
 
         return None
 
-    def __get_data(self, key):
-        cache = self.__get(key)
+    def __clean_cache(self) -> None:
+        for cachable in self._cache.copy():
+            if cachable.is_expired:
+                self._cache.remove(cachable)
 
-        if cache is None:
+    def __get_data(self, key: str) -> Optional[object]:
+        self.__clean_cache()
+        cachable = self.__get(key)
+
+        if cachable is None:
             return None
 
-        if cache["expire"] < datetime.now():
-            self._cache.remove(cache)
-
-            return None
-
-        return cache["data"]
+        return cachable.data
