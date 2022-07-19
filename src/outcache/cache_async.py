@@ -12,12 +12,12 @@ class CacheAsync(Cache):
         @wraps(param_arg[0])
         async def wrapper(ctx, *args, **kwargs):
             key = self._get_key(ctx, param_arg[0], *args, **kwargs)
-            result = self.__get_data(key)
+            result = self._get_data(key)
 
             if result is None:
                 result = await param_arg[0](ctx, *args, **kwargs)
 
-                self.__add(key, result)
+                self._add(key, result)
 
             return result
 

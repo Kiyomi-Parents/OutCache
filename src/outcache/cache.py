@@ -29,12 +29,12 @@ class Cache:
         @wraps(param_arg[0])
         def wrapper(ctx, *args, **kwargs):
             key = self._get_key(ctx, param_arg[0], *args, **kwargs)
-            result = self.__get_data(key)
+            result = self._get_data(key)
 
             if result is None:
                 result = param_arg[0](ctx, *args, **kwargs)
 
-                self.__add(key, result)
+                self._add(key, result)
 
             return result
 
@@ -50,7 +50,7 @@ class Cache:
 
         return f"{id(ctx)}/{func.__name__}/{'/'.join(key_args)}/{'/'.join(key_kwargs)}"
 
-    def __add(self, key: str, data: object) -> None:
+    def _add(self, key: str, data: object) -> None:
         self._cache.append(
                 Cachable(
                         datetime.now() + timedelta(seconds=self._time),
@@ -59,21 +59,21 @@ class Cache:
                 )
         )
 
-    def __get(self, key: str) -> Optional[Cachable]:
+    def _get(self, key: str) -> Optional[Cachable]:
         for cachable in self._cache:
             if cachable.key == key:
                 return cachable
 
         return None
 
-    def __clean_cache(self) -> None:
+    def _clean_cache(self) -> None:
         for cachable in self._cache.copy():
             if cachable.is_expired:
                 self._cache.remove(cachable)
 
-    def __get_data(self, key: str) -> Optional[object]:
-        self.__clean_cache()
-        cachable = self.__get(key)
+    def _get_data(self, key: str) -> Optional[object]:
+        self._clean_cache()
+        cachable = self._get(key)
 
         if cachable is None:
             return None
