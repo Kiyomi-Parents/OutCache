@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import List, Optional, Callable
 
-from src.outcache.cachable import Cachable
+from .cachable import Cachable
 
 
 class UnSupportedDataTypeException(Exception):
